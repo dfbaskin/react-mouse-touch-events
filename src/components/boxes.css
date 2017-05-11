@@ -24,3 +24,11 @@
     color: white;
     z-index: 2;
 }
+
+.box.editor {
+    z-index: 3;
+}
+
+.box input {
+    width: 100%;
+}

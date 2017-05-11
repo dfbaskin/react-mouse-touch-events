@@ -1,6 +1,9 @@
 
 import React, {PureComponent} from "react";
 import {Box} from "./box";
+import {boxHeight, boxWidth} from './box-values';
+import {BoxEditor} from './box-editor';
+
 import {Observable} from "rxjs/Observable";
 import {Subject} from "rxjs/Subject";
 import "rxjs/add/observable/merge";
@@ -13,8 +16,6 @@ import "rxjs/add/operator/takeUntil";
 import "./boxes.css";
 
 const boxCount = 10;
-const boxWidth = 200;
-const boxHeight = 70;
 
 export class Boxes extends PureComponent {
 
@@ -22,7 +23,8 @@ export class Boxes extends PureComponent {
         super();
         this.state = {
             boxes: [],
-            selectedBoxIndex: -1
+            selectedBoxIndex: -1,
+            editMode: false
         };
     }
 
@@ -64,7 +66,7 @@ export class Boxes extends PureComponent {
                 offsetX, offsetY,
                 found: this.findBox(x, y)
             }))
-            .filter(({found}) => found !== -1)
+            .filter(({found}) => found !== -1 && !this.state.editMode)
             .do(({found}) => {
                 this.setState(() => ({
                     selectedBoxIndex: found
@@ -126,7 +128,7 @@ export class Boxes extends PureComponent {
                 offsetX, offsetY,
                 found: this.findBox(x, y)
             }))
-            .filter(({found}) => found !== -1)
+            .filter(({found}) => found !== -1 && !this.state.editMode)
             .do(({found}) => {
                 this.setState(() => ({
                     selectedBoxIndex: found
@@ -208,19 +210,47 @@ export class Boxes extends PureComponent {
         return found;
     }
 
+    onBoxModified = (updatedBox) => {
+        this.setState(({boxes, selectedBoxIndex}) => ({
+            boxes: boxes.map((box, idx) => {
+                return idx === selectedBoxIndex ? updatedBox : box;
+            })
+        }));
+    };
+
+    onDoubleClick = (evt) => {
+        const {x, y} = this.getMouseEventData(evt);
+        const found = this.findBox(x, y);
+        if(found !== -1) {
+            this.setState(() => ({
+                selectedBoxIndex: found,
+                editMode: true
+            }));
+        }
+    };
+
+    cancelEditMode = () => {
+        this.setState(() => ({
+            editMode: false
+        }));
+    };
+
     render() {
         const {
             state,
             setDivRef: ref,
+            onBoxModified,
+            cancelEditMode,
             onMouseDown,
             onMouseMove,
             onMouseUp,
             onTouchStart,
             onTouchMove,
             onTouchEnd,
-            onTouchCancel
+            onTouchCancel,
+            onDoubleClick
         } = this;
-        const {boxes, selectedBoxIndex} = state;
+        const {boxes, selectedBoxIndex, editMode} = state;
         const divProps = {
             className: "boxes",
             ref,
@@ -230,10 +260,17 @@ export class Boxes extends PureComponent {
             onTouchStart,
             onTouchMove,
             onTouchEnd,
-            onTouchCancel
+            onTouchCancel,
+            onDoubleClick
+        };
+        const boxEditorProps = {
+            box: editMode ? boxes[selectedBoxIndex] : undefined,
+            onBoxModified,
+            cancelEditMode
         };
         return (
             <div {...divProps}>
+                <BoxEditor {...boxEditorProps} />
                 {boxes.map((box, idx) => {
                     const boxProps = {
                         key: box.id,
