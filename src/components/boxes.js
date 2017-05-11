@@ -3,6 +3,10 @@ import React, {PureComponent} from "react";
 import {Box} from "./box";
 import {Subject} from "rxjs/Subject";
 import "rxjs/add/operator/do";
+import "rxjs/add/operator/map";
+import "rxjs/add/operator/filter";
+import "rxjs/add/operator/switchMap";
+import "rxjs/add/operator/takeUntil";
 
 import "./boxes.css";
 
@@ -48,30 +52,61 @@ export class Boxes extends PureComponent {
 
     observeMouseEvents() {
         this.mouseDownObservable = new Subject();
+        this.mouseMoveObservable = new Subject();
+        this.mouseUpObservable = new Subject();
 
-        const mouseDownStream = this.mouseDownObservable
-            .do(({x, y}) => {
-                const found = this.findBox(x, y);
-                if(found !== -1) {
-                    this.setState(() => ({
-                        selectedBoxIndex: found
-                    }));
-                }
+        const mouseStream = this.mouseDownObservable
+            .map(({x, y, offsetX, offsetY}) => ({
+                x, y,
+                offsetX, offsetY,
+                found: this.findBox(x, y)
+            }))
+            .filter(({found}) => found !== -1)
+            .do(({found}) => {
+                this.setState(() => ({
+                    selectedBoxIndex: found
+                }));
+            })
+            .switchMap(({offsetX, offsetY}) => {
+                return this.mouseMoveObservable
+                    .do(({x, y}) => {
+                        this.setState(({boxes, selectedBoxIndex}) => ({
+                            boxes: boxes.map((box, idx) => {
+                                return idx !== selectedBoxIndex ? box : {
+                                    ...box,
+                                    left: x - offsetX,
+                                    top: y - offsetY
+                                };
+                            })
+                        }));
+                    })
+                    .takeUntil(this.mouseUpObservable);
             });
 
-        return mouseDownStream.subscribe();
+        return mouseStream.subscribe();
     }
 
     onMouseDown = (evt) => {
         this.mouseDownObservable.next(this.getMouseEventData(evt));
     };
 
+    onMouseMove = (evt) => {
+        this.mouseMoveObservable.next(this.getMouseEventData(evt));
+    };
+
+    onMouseUp = (evt) => {
+        this.mouseUpObservable.next(this.getMouseEventData(evt));
+    };
+
     getMouseEventData(evt) {
-        const {clientX, clientY, altKey, ctrlKey, shiftKey} = evt;
+        const {clientX, clientY, altKey, ctrlKey, shiftKey, target} = evt;
         const {left, top} = this.divRef.getBoundingClientRect();
+        const {left: targetLeft, top: targetTop} = target.getBoundingClientRect();
         const x = clientX - left;
         const y = clientY - top;
-        return {x, y, altKey, ctrlKey, shiftKey};
+        const offsetX = clientX - targetLeft;
+        const offsetY = clientY - targetTop;
+        return {x, y, offsetX, offsetY, altKey, ctrlKey, shiftKey};
     }
 
     findBox(x, y) {
@@ -103,13 +138,17 @@ export class Boxes extends PureComponent {
         const {
             state,
             setDivRef: ref,
-            onMouseDown
+            onMouseDown,
+            onMouseMove,
+            onMouseUp
         } = this;
         const {boxes, selectedBoxIndex} = state;
         const divProps = {
             className: "boxes",
             ref,
-            onMouseDown
+            onMouseDown,
+            onMouseMove,
+            onMouseUp
         };
         return (
             <div {...divProps}>
