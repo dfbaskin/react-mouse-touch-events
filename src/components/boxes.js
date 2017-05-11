@@ -1,7 +1,9 @@
 
 import React, {PureComponent} from "react";
 import {Box} from "./box";
+import {Observable} from "rxjs/Observable";
 import {Subject} from "rxjs/Subject";
+import "rxjs/add/observable/merge";
 import "rxjs/add/operator/do";
 import "rxjs/add/operator/map";
 import "rxjs/add/operator/filter";
@@ -38,7 +40,8 @@ export class Boxes extends PureComponent {
             selectedBoxIndex: 0
         }));
         this.subscriptions = [
-            this.observeMouseEvents()
+            this.observeMouseEvents(),
+            this.observeTouchEvents()
         ];
     }
 
@@ -109,6 +112,77 @@ export class Boxes extends PureComponent {
         return {x, y, offsetX, offsetY, altKey, ctrlKey, shiftKey};
     }
 
+    observeTouchEvents() {
+        this.touchStartObservable = new Subject();
+        this.touchMoveObservable = new Subject();
+        this.touchEndObservable = new Subject();
+        this.touchCancelObservable = new Subject();
+
+        const touchFinishedStream = Observable.merge(this.touchEndObservable, this.touchCancelObservable);
+
+        const touchStream = this.touchStartObservable
+            .map(({x, y, offsetX, offsetY}) => ({
+                x, y,
+                offsetX, offsetY,
+                found: this.findBox(x, y)
+            }))
+            .filter(({found}) => found !== -1)
+            .do(({found}) => {
+                this.setState(() => ({
+                    selectedBoxIndex: found
+                }));
+            })
+            .switchMap(({offsetX, offsetY}) => {
+                return this.touchMoveObservable
+                    .do(({x, y}) => {
+                        this.setState(({boxes, selectedBoxIndex}) => ({
+                            boxes: boxes.map((box, idx) => {
+                                return idx !== selectedBoxIndex ? box : {
+                                    ...box,
+                                    left: x - offsetX,
+                                    top: y - offsetY
+                                };
+                            })
+                        }));
+                    })
+                    .takeUntil(touchFinishedStream);
+            });
+
+        return touchStream.subscribe();
+    }
+
+    onTouchStart = (evt) => {
+        evt.preventDefault();
+        this.touchStartObservable.next(this.getTouchEventData(evt));
+    };
+
+    onTouchMove = (evt) => {
+        evt.preventDefault();
+        this.touchMoveObservable.next(this.getTouchEventData(evt));
+    };
+
+    onTouchEnd = (evt) => {
+        evt.preventDefault();
+        this.touchEndObservable.next(this.getTouchEventData(evt));
+    };
+
+    onTouchCancel = (evt) => {
+        evt.preventDefault();
+        this.touchCancelObservable.next(this.getTouchEventData(evt));
+    };
+
+    getTouchEventData = (evt) => {
+        const {changedTouches, target} = evt;
+        const {clientX, clientY} = changedTouches[0];
+        const {left, top} = this.divRef.getBoundingClientRect();
+        const {left: targetLeft, top: targetTop} = target.getBoundingClientRect();
+        const x = clientX - left;
+        const y = clientY - top;
+        const offsetX = clientX - targetLeft;
+        const offsetY = clientY - targetTop;
+        return {x, y, offsetX, offsetY};
+    };
+
     findBox(x, y) {
         const {boxes, selectedBoxIndex} = this.state;
         const {found} = boxes.reduce((acc, box) => {
@@ -140,7 +214,11 @@ export class Boxes extends PureComponent {
             setDivRef: ref,
             onMouseDown,
             onMouseMove,
-            onMouseUp
+            onMouseUp,
+            onTouchStart,
+            onTouchMove,
+            onTouchEnd,
+            onTouchCancel
         } = this;
         const {boxes, selectedBoxIndex} = state;
         const divProps = {
@@ -148,7 +226,11 @@ export class Boxes extends PureComponent {
             ref,
             onMouseDown,
             onMouseMove,
-            onMouseUp
+            onMouseUp,
+            onTouchStart,
+            onTouchMove,
+            onTouchEnd,
+            onTouchCancel
         };
         return (
             <div {...divProps}>
