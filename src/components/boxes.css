@@ -4,6 +4,7 @@
     height: 60vh;
     position: relative;
     overflow: hidden;
+    user-select: none;
 }
 
 .box {
@@ -11,4 +12,15 @@
     background-color: aliceblue;
     border: 2px solid lightblue;
     padding: 1.5rem;
+    z-index: 1;
+    user-select: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.box.active {
+    background-color: cornflowerblue;
+    border-color: orangered;
+    color: white;
+    z-index: 2;
 }

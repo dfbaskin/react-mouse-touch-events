@@ -1,15 +1,17 @@
 
 import React from "react";
 
-export const Box = ({box}) => {
+export const Box = ({isActive, box: {top, left, width, height, text}}) => {
     const boxProps = {
-        className: 'box',
+        className: 'box' + (isActive ? ' active' : ''),
         style: {
-            top: `${box.top * 100}%`,
-            left: `${box.left * 100}%`
+            top,
+            left,
+            width,
+            height
         }
     };
     return (
-        <div {...boxProps}>{box.text}</div>
+        <div {...boxProps}>{text}</div>
     )
 };
