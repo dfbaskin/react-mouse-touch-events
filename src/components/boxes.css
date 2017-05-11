@@ -1,0 +1,14 @@
+
+.boxes {
+    border: 1px solid lightgrey;
+    height: 60vh;
+    position: relative;
+    overflow: hidden;
+}
+
+.box {
+    position: absolute;
+    background-color: aliceblue;
+    border: 2px solid lightblue;
+    padding: 1.5rem;
+}
