@@ -1,24 +1,9 @@
 
 import React, {PureComponent} from "react";
+import {Box} from "./box";
 import "./boxes.css";
 
 const boxCount = 10;
-
-export class Box extends PureComponent {
-    render() {
-        const {box} = this.props;
-        const boxProps = {
-            className: 'box',
-            style: {
-                top: `${box.top * 100}%`,
-                left: `${box.left * 100}%`
-            }
-        };
-        return (
-            <div {...boxProps}>{box.text}</div>
-        )
-    }
-}
 
 export class Boxes extends PureComponent {
 
