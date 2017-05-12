@@ -153,10 +153,31 @@ export class Boxes extends PureComponent {
         return touchStream.subscribe();
     }
 
-    onTouchStart = (evt) => {
-        evt.preventDefault();
-        this.touchStartObservable.next(this.getTouchEventData(evt));
-    };
+    onTouchStart = (() => {
+        let lastTime = Date.now();
+        return (evt) => {
+
+            evt.preventDefault();
+            const evtData = this.getTouchEventData(evt);
+
+            const thisTime = Date.now();
+            const elapsedTime = thisTime - lastTime;
+            lastTime = thisTime;
+
+            if(elapsedTime > 250) {
+                this.touchStartObservable.next(evtData);
+            } else {
+                const {x, y} = evtData;
+                const found = this.findBox(x, y);
+                if(found !== -1) {
+                    this.setState(() => ({
+                        selectedBoxIndex: found,
+                        editMode: true
+                    }));
+                }
+            }
+        };
+    })();
 
     onTouchMove = (evt) => {
         evt.preventDefault();
