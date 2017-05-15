@@ -98,6 +98,7 @@ export class Boxes extends PureComponent {
             lastTime = thisTime;
 
             if(elapsedTime > DOUBLE_TAP_DELAY) {
+                this.divRef.setPointerCapture(evt.pointerId);
                 this.pointerDownObservable.next(evtData);
             } else {
                 const {x, y} = evtData;
@@ -119,6 +120,10 @@ export class Boxes extends PureComponent {
 
     onPointerUp = (evt) => {
         this.pointerUpObservable.next(this.getPointerEventData(evt));
+    };
+
+    onPointerCancel = (evt) => {
+        this.divRef.releasePointerCapture(evt.pointerId);
     };
 
     getPointerEventData(evt) {
@@ -187,6 +192,7 @@ export class Boxes extends PureComponent {
             onPointerDown,
             onPointerMove,
             onPointerUp,
+            onPointerCancel
         } = this;
         const {boxes, selectedBoxIndex, editMode} = state;
         const divProps = {
@@ -196,7 +202,8 @@ export class Boxes extends PureComponent {
             // elementRef,
             onPointerDown,
             onPointerMove,
-            onPointerUp
+            onPointerUp,
+            onPointerCancel
         };
         const boxEditorProps = {
             box: editMode ? boxes[selectedBoxIndex] : undefined,
