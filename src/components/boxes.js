@@ -3,8 +3,8 @@ import React, {PureComponent} from "react";
 import {Box} from "./box";
 import {boxHeight, boxWidth} from './box-values';
 import {BoxEditor} from './box-editor';
+import Pointable from 'react-pointable';
 
-import {Observable} from "rxjs/Observable";
 import {Subject} from "rxjs/Subject";
 import "rxjs/add/observable/merge";
 import "rxjs/add/operator/do";
@@ -16,6 +16,7 @@ import "rxjs/add/operator/takeUntil";
 import "./boxes.css";
 
 const boxCount = 10;
+const DOUBLE_TAP_DELAY = 300;
 
 export class Boxes extends PureComponent {
 
@@ -42,8 +43,7 @@ export class Boxes extends PureComponent {
             selectedBoxIndex: 0
         }));
         this.subscriptions = [
-            this.observeMouseEvents(),
-            this.observeTouchEvents()
+            this.observePointerEvents()
         ];
     }
 
@@ -51,16 +51,12 @@ export class Boxes extends PureComponent {
         this.subscriptions.forEach(unsubscribe => unsubscribe());
     }
 
-    setDivRef = (divRef) => {
-        this.divRef = divRef;
-    };
+    observePointerEvents() {
+        this.pointerDownObservable = new Subject();
+        this.pointerMoveObservable = new Subject();
+        this.pointerUpObservable = new Subject();
 
-    observeMouseEvents() {
-        this.mouseDownObservable = new Subject();
-        this.mouseMoveObservable = new Subject();
-        this.mouseUpObservable = new Subject();
-
-        const mouseStream = this.mouseDownObservable
+        const pointerStream = this.pointerDownObservable
             .map(({x, y, offsetX, offsetY}) => ({
                 x, y,
                 offsetX, offsetY,
@@ -73,7 +69,7 @@ export class Boxes extends PureComponent {
                 }));
             })
             .switchMap(({offsetX, offsetY}) => {
-                return this.mouseMoveObservable
+                return this.pointerMoveObservable
                     .do(({x, y}) => {
                         this.setState(({boxes, selectedBoxIndex}) => ({
                             boxes: boxes.map((box, idx) => {
@@ -85,87 +81,24 @@ export class Boxes extends PureComponent {
                             })
                         }));
                     })
-                    .takeUntil(this.mouseUpObservable);
+                    .takeUntil(this.pointerUpObservable);
             });
 
-        return mouseStream.subscribe();
+        return pointerStream.subscribe();
     }
 
-    onMouseDown = (evt) => {
-        this.mouseDownObservable.next(this.getMouseEventData(evt));
-    };
-
-    onMouseMove = (evt) => {
-        this.mouseMoveObservable.next(this.getMouseEventData(evt));
-    };
-
-    onMouseUp = (evt) => {
-        this.mouseUpObservable.next(this.getMouseEventData(evt));
-    };
-
-    getMouseEventData(evt) {
-        const {clientX, clientY, altKey, ctrlKey, shiftKey, target} = evt;
-        const {left, top} = this.divRef.getBoundingClientRect();
-        const {left: targetLeft, top: targetTop} = target.getBoundingClientRect();
-        const x = clientX - left;
-        const y = clientY - top;
-        const offsetX = clientX - targetLeft;
-        const offsetY = clientY - targetTop;
-        return {x, y, offsetX, offsetY, altKey, ctrlKey, shiftKey};
-    }
-
-    observeTouchEvents() {
-        this.touchStartObservable = new Subject();
-        this.touchMoveObservable = new Subject();
-        this.touchEndObservable = new Subject();
-        this.touchCancelObservable = new Subject();
-
-        const touchFinishedStream = Observable.merge(this.touchEndObservable, this.touchCancelObservable);
-
-        const touchStream = this.touchStartObservable
-            .map(({x, y, offsetX, offsetY}) => ({
-                x, y,
-                offsetX, offsetY,
-                found: this.findBox(x, y)
-            }))
-            .filter(({found}) => found !== -1 && !this.state.editMode)
-            .do(({found}) => {
-                this.setState(() => ({
-                    selectedBoxIndex: found
-                }));
-            })
-            .switchMap(({offsetX, offsetY}) => {
-                return this.touchMoveObservable
-                    .do(({x, y}) => {
-                        this.setState(({boxes, selectedBoxIndex}) => ({
-                            boxes: boxes.map((box, idx) => {
-                                return idx !== selectedBoxIndex ? box : {
-                                    ...box,
-                                    left: x - offsetX,
-                                    top: y - offsetY
-                                };
-                            })
-                        }));
-                    })
-                    .takeUntil(touchFinishedStream);
-            });
-
-        return touchStream.subscribe();
-    }
-
-    onTouchStart = (() => {
+    onPointerDown = (() => {
         let lastTime = Date.now();
         return (evt) => {
 
-            evt.preventDefault();
-            const evtData = this.getTouchEventData(evt);
+            const evtData = this.getPointerEventData(evt);
 
             const thisTime = Date.now();
             const elapsedTime = thisTime - lastTime;
             lastTime = thisTime;
 
-            if(elapsedTime > 250) {
-                this.touchStartObservable.next(evtData);
+            if(elapsedTime > DOUBLE_TAP_DELAY) {
+                this.pointerDownObservable.next(evtData);
             } else {
                 const {x, y} = evtData;
                 const found = this.findBox(x, y);
@@ -179,32 +112,25 @@ export class Boxes extends PureComponent {
         };
     })();
 
-    onTouchMove = (evt) => {
-        evt.preventDefault();
-        this.touchMoveObservable.next(this.getTouchEventData(evt));
+
+    onPointerMove = (evt) => {
+        this.pointerMoveObservable.next(this.getPointerEventData(evt));
     };
 
-    onTouchEnd = (evt) => {
-        evt.preventDefault();
-        this.touchEndObservable.next(this.getTouchEventData(evt));
+    onPointerUp = (evt) => {
+        this.pointerUpObservable.next(this.getPointerEventData(evt));
     };
 
-    onTouchCancel = (evt) => {
-        evt.preventDefault();
-        this.touchCancelObservable.next(this.getTouchEventData(evt));
-    };
-
-    getTouchEventData = (evt) => {
-        const {changedTouches, target} = evt;
-        const {clientX, clientY} = changedTouches[0];
+    getPointerEventData(evt) {
+        const {clientX, clientY, altKey, ctrlKey, shiftKey, target} = evt;
         const {left, top} = this.divRef.getBoundingClientRect();
         const {left: targetLeft, top: targetTop} = target.getBoundingClientRect();
         const x = clientX - left;
         const y = clientY - top;
         const offsetX = clientX - targetLeft;
         const offsetY = clientY - targetTop;
-        return {x, y, offsetX, offsetY};
-    };
+        return {x, y, offsetX, offsetY, altKey, ctrlKey, shiftKey};
+    }
 
     findBox(x, y) {
         const {boxes, selectedBoxIndex} = this.state;
@@ -239,50 +165,38 @@ export class Boxes extends PureComponent {
         }));
     };
 
-    onDoubleClick = (evt) => {
-        const {x, y} = this.getMouseEventData(evt);
-        const found = this.findBox(x, y);
-        if(found !== -1) {
-            this.setState(() => ({
-                selectedBoxIndex: found,
-                editMode: true
-            }));
-        }
-    };
-
     cancelEditMode = () => {
         this.setState(() => ({
             editMode: false
         }));
     };
 
+    // Waiting on pull request:
+    // https://github.com/MilllerTime/react-pointable/pull/2
+    setDivRef = (divRef) => {
+        this.divRef = divRef.pointableNode;
+        // this.divRef = divRef;
+    };
+
     render() {
         const {
             state,
-            setDivRef: ref,
+            setDivRef: elementRef,
             onBoxModified,
             cancelEditMode,
-            onMouseDown,
-            onMouseMove,
-            onMouseUp,
-            onTouchStart,
-            onTouchMove,
-            onTouchEnd,
-            onTouchCancel,
-            onDoubleClick
+            onPointerDown,
+            onPointerMove,
+            onPointerUp,
         } = this;
         const {boxes, selectedBoxIndex, editMode} = state;
         const divProps = {
             className: "boxes",
-            ref,
-            onMouseDown,
-            onMouseMove,
-            onMouseUp,
-            onTouchStart,
-            onTouchMove,
-            onTouchEnd,
-            onTouchCancel,
-            onDoubleClick
+            touchAction: "none",
+            ref: elementRef,
+            // elementRef,
+            onPointerDown,
+            onPointerMove,
+            onPointerUp
         };
         const boxEditorProps = {
             box: editMode ? boxes[selectedBoxIndex] : undefined,
@@ -290,7 +204,7 @@ export class Boxes extends PureComponent {
             cancelEditMode
         };
         return (
-            <div {...divProps}>
+            <Pointable {...divProps}>
                 <BoxEditor {...boxEditorProps} />
                 {boxes.map((box, idx) => {
                     const boxProps = {
@@ -300,7 +214,7 @@ export class Boxes extends PureComponent {
                     };
                     return <Box {...boxProps} />
                 })}
-            </div>
-        )
+            </Pointable>
+        );
     }
 }
