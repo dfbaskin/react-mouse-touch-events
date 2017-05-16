@@ -176,11 +176,8 @@ export class Boxes extends PureComponent {
         }));
     };
 
-    // Waiting on pull request:
-    // https://github.com/MilllerTime/react-pointable/pull/2
     setDivRef = (divRef) => {
-        this.divRef = divRef.pointableNode;
-        // this.divRef = divRef;
+        this.divRef = divRef;
     };
 
     render() {
@@ -198,8 +195,7 @@ export class Boxes extends PureComponent {
         const divProps = {
             className: "boxes",
             touchAction: "none",
-            ref: elementRef,
-            // elementRef,
+            elementRef,
             onPointerDown,
             onPointerMove,
             onPointerUp,

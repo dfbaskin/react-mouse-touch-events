@@ -4172,9 +4172,9 @@ react-dom@^15.5.4:
     object-assign "^4.1.0"
     prop-types "~15.5.7"
 
-react-pointable@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/react-pointable/-/react-pointable-1.0.0.tgz#6f7325d4a5cb990d77fb8daa8162da5746b471ec"
+react-pointable@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/react-pointable/-/react-pointable-1.1.0.tgz#5e41de5e3ef02a055e19c140d6bef330481746fb"
 
 react-scripts@0.9.5:
   version "0.9.5"
