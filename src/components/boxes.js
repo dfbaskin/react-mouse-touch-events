@@ -3,15 +3,9 @@ import React, {PureComponent} from "react";
 import {Box} from "./box";
 import {boxHeight, boxWidth} from './box-values';
 import {BoxEditor} from './box-editor';
-import Pointable from 'react-pointable';
 
-import {Subject} from "rxjs/Subject";
-import "rxjs/add/observable/merge";
-import "rxjs/add/operator/do";
-import "rxjs/add/operator/map";
-import "rxjs/add/operator/filter";
-import "rxjs/add/operator/switchMap";
-import "rxjs/add/operator/takeUntil";
+import {Subject} from "rxjs";
+import {map, filter, tap, switchMap, takeUntil} from "rxjs/operators";
 
 import "./boxes.css";
 
@@ -20,14 +14,16 @@ const DOUBLE_TAP_DELAY = 300;
 
 export class Boxes extends PureComponent {
 
-    constructor() {
-        super();
-        this.state = {
-            boxes: [],
-            selectedBoxIndex: -1,
-            editMode: false
-        };
-    }
+    divRef = null;
+    subscriptions = [];
+    state = {
+        boxes: [],
+        selectedBoxIndex: -1,
+        editMode: false
+    };
+    pointerDownObservable = new Subject();
+    pointerMoveObservable = new Subject();
+    pointerUpObservable = new Subject();
 
     componentDidMount() {
         const {width, height} = this.divRef.getBoundingClientRect();
@@ -52,25 +48,21 @@ export class Boxes extends PureComponent {
     }
 
     observePointerEvents() {
-        this.pointerDownObservable = new Subject();
-        this.pointerMoveObservable = new Subject();
-        this.pointerUpObservable = new Subject();
-
-        const pointerStream = this.pointerDownObservable
-            .map(({x, y, offsetX, offsetY}) => ({
+        const pointerStream = this.pointerDownObservable.pipe(
+            map(({x, y, offsetX, offsetY}) => ({
                 x, y,
                 offsetX, offsetY,
                 found: this.findBox(x, y)
-            }))
-            .filter(({found}) => found !== -1 && !this.state.editMode)
-            .do(({found}) => {
+            })),
+            filter(({found}) => found !== -1 && !this.state.editMode),
+            tap(({found}) => {
                 this.setState(() => ({
                     selectedBoxIndex: found
                 }));
-            })
-            .switchMap(({offsetX, offsetY}) => {
-                return this.pointerMoveObservable
-                    .do(({x, y}) => {
+            }),
+            switchMap(({offsetX, offsetY}) => {
+                return this.pointerMoveObservable.pipe(
+                    tap(({x, y}) => {
                         this.setState(({boxes, selectedBoxIndex}) => ({
                             boxes: boxes.map((box, idx) => {
                                 return idx !== selectedBoxIndex ? box : {
@@ -80,9 +72,11 @@ export class Boxes extends PureComponent {
                                 };
                             })
                         }));
-                    })
-                    .takeUntil(this.pointerUpObservable);
-            });
+                    }),
+                    takeUntil(this.pointerUpObservable)
+                );
+            })
+        );
 
         return pointerStream.subscribe();
     }
@@ -112,7 +106,6 @@ export class Boxes extends PureComponent {
             }
         };
     })();
-
 
     onPointerMove = (evt) => {
         this.pointerMoveObservable.next(this.getPointerEventData(evt));
@@ -183,7 +176,7 @@ export class Boxes extends PureComponent {
     render() {
         const {
             state,
-            setDivRef: elementRef,
+            setDivRef: ref,
             onBoxModified,
             cancelEditMode,
             onPointerDown,
@@ -194,8 +187,7 @@ export class Boxes extends PureComponent {
         const {boxes, selectedBoxIndex, editMode} = state;
         const divProps = {
             className: "boxes",
-            touchAction: "none",
-            elementRef,
+            ref,
             onPointerDown,
             onPointerMove,
             onPointerUp,
@@ -207,7 +199,7 @@ export class Boxes extends PureComponent {
             cancelEditMode
         };
         return (
-            <Pointable {...divProps}>
+            <div {...divProps}>
                 <BoxEditor {...boxEditorProps} />
                 {boxes.map((box, idx) => {
                     const boxProps = {
@@ -217,7 +209,7 @@ export class Boxes extends PureComponent {
                     };
                     return <Box {...boxProps} />
                 })}
-            </Pointable>
+            </div>
         );
     }
 }

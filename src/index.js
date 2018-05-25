@@ -1,5 +1,6 @@
 
-import "pepjs"; // Pointer event polyfill
+// Only include the following line if you need a polyfill for pointer events.
+// import "pepjs"; // Pointer event polyfill
 
 import React from 'react';
 import ReactDOM from 'react-dom';
