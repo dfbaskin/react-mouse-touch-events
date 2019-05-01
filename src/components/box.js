@@ -1,6 +1,6 @@
 import React from "react";
 
-export const Box = ({ isActive, box: { top, left, width, height, text } }) => {
+export function Box({ isActive, box: { top, left, width, height, text } }) {
   const boxProps = {
     className: "box" + (isActive ? " active" : ""),
     style: {
@@ -11,4 +11,4 @@ export const Box = ({ isActive, box: { top, left, width, height, text } }) => {
     }
   };
   return <div {...boxProps}>{text}</div>;
-};
+}

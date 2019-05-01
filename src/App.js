@@ -1,4 +1,4 @@
-import React, { PureComponent } from "react";
+import React from "react";
 import { Boxes } from "./components/boxes";
 import "./App.css";
 
