@@ -15,7 +15,7 @@ export function App() {
         </p>
       </div>
       <div>
-        <Boxes />>
+        <Boxes />
       </div>
     </div>
   );

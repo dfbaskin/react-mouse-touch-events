@@ -1,4 +1,4 @@
-import React, { PureComponent } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Box } from "./box";
 import { boxHeight, boxWidth } from "./box-values";
 import { BoxEditor } from "./box-editor";
@@ -11,6 +11,57 @@ import "./boxes.css";
 const boxCount = 10;
 const DOUBLE_TAP_DELAY = 300;
 
+export function Boxes() {
+  const [boxes, setBoxes] = useState([]);
+  const [selectedBoxIndex, setSelectedBoxIndex] = useState(0);
+  const [editMode, setEditMode] = useState(false);
+  const divRef = useRef(null);
+  useEffect(() => {
+    const { width, height } = divRef.current.getBoundingClientRect();
+    const initialBoxes = new Array(boxCount).fill(0).map((v, idx) => ({
+      id: `box-${idx + 1}`,
+      top: Math.random() * (height - boxHeight),
+      left: Math.random() * (width - boxWidth),
+      width: boxWidth,
+      height: boxHeight,
+      text: `Box ${idx + 101}`
+    }));
+    setBoxes(initialBoxes);
+  }, []);
+
+  const onBoxModified = updatedBox => {
+    setBoxes(
+      boxes.map((box, idx) => {
+        return idx === selectedBoxIndex ? updatedBox : box;
+      })
+    );
+  };
+
+  const cancelEditMode = () => {
+    setEditMode(false);
+  };
+
+  const divProps = {
+    className: "boxes",
+    ref: divRef
+  };
+  const boxEditorProps = {
+    box: editMode ? boxes[selectedBoxIndex] : undefined,
+    onBoxModified,
+    cancelEditMode
+  };
+
+  return (
+    <div {...divProps}>
+      <BoxEditor {...boxEditorProps} />
+      {boxes.map((box, idx) => (
+        <Box key={box.id} box={box} isActive={idx === selectedBoxIndex} />
+      ))}
+    </div>
+  );
+}
+
+/*
 export class Boxes extends PureComponent {
   divRef = null;
   subscriptions = [];
@@ -215,3 +266,4 @@ export class Boxes extends PureComponent {
     );
   }
 }
+*/
