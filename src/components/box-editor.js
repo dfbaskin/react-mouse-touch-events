@@ -1,84 +1,58 @@
-import React, { PureComponent } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { boxHeight, boxWidth } from "./box-values";
 
 const nonActiveBox = {
   top: 0,
   left: -9999,
   width: boxWidth,
-  height: boxHeight,
-  text: ""
+  height: boxHeight
 };
 
-export class BoxEditor extends PureComponent {
-  constructor() {
-    super();
-    this.state = {
-      text: ""
-    };
-  }
-
-  componentWillUpdate(nextProps) {
-    if (nextProps.box && this.props.box !== nextProps.box) {
-      this.inputRef.focus();
-      this.setState(() => ({
-        text: nextProps.box.text
-      }));
+export function BoxEditor({ box, onBoxModified, cancelEditMode }) {
+  const [text, setText] = useState("");
+  const inputRef = useRef(null);
+  useEffect(() => {
+    if (box) {
+      inputRef.current.focus();
+      setText(box.text);
       setTimeout(() => {
-        this.inputRef.select();
+        inputRef.current.select();
       });
     }
-  }
+  }, [box]);
 
-  setInputRef = inputRef => {
-    this.inputRef = inputRef;
+  const { top, left, width, height } = box || nonActiveBox;
+  const boxProps = {
+    className: "box active editor",
+    style: { top, left, width, height }
   };
-
-  onChange = evt => {
-    const text = evt.target.value;
-    this.setState(() => ({ text }));
+  const inputProps = {
+    type: "text",
+    value: text,
+    onChange: evt => setText(evt.target.value),
+    onKeyDown: evt => {
+      if (box) {
+        if (evt.key === "Enter") {
+          evt.preventDefault();
+          onBoxModified({ ...box, text });
+          cancelEditMode();
+        } else if (evt.key === "Escape") {
+          evt.preventDefault();
+          cancelEditMode();
+        }
+      }
+    },
+    onBlur: () => {
+      if (box) {
+        onBoxModified({ ...box, text });
+        cancelEditMode();
+      }
+    },
+    ref: inputRef
   };
-
-  onKeyDown = evt => {
-    const { box, onBoxModified } = this.props;
-    if (evt.key === "Enter") {
-      evt.preventDefault();
-      onBoxModified({
-        ...box,
-        text: this.state.text
-      });
-      this.exitEditMode();
-    } else if (evt.key === "Escape") {
-      evt.preventDefault();
-      this.exitEditMode();
-    }
-  };
-
-  exitEditMode() {
-    const { cancelEditMode } = this.props;
-    this.setState(() => ({ text: "" }));
-    cancelEditMode();
-    this.inputRef.blur();
-  }
-
-  render() {
-    const { props, onChange, onKeyDown, setInputRef } = this;
-    const { box = nonActiveBox } = props;
-    const { top, left, width, height } = box;
-    const boxProps = {
-      className: "box active editor",
-      style: { top, left, width, height }
-    };
-    const inputProps = {
-      type: "text",
-      value: this.state.text,
-      onChange,
-      onKeyDown,
-      ref: setInputRef
-    };
-    return (
-      <div {...boxProps}>
-        <input {...inputProps} />
-      </div>
-    );
-  }
+  return (
+    <div {...boxProps}>
+      <input {...inputProps} />
+    </div>
+  );
 }
