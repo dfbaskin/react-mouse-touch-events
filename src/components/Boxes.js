@@ -1,12 +1,12 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Box } from "./box";
-import { boxHeight, boxWidth } from "./box-values";
-import { BoxEditor } from "./box-editor";
+import { Box } from "./Box";
+import { boxHeight, boxWidth } from "./boxValues";
+import { BoxEditor } from "./BoxEditor";
 
 import { Subject } from "rxjs";
 import { map, filter, tap, switchMap, takeUntil } from "rxjs/operators";
 
-import "./boxes.css";
+import "./Boxes.css";
 
 const boxCount = 10;
 const DOUBLE_TAP_DELAY = 300;

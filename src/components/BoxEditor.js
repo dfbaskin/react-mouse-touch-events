@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { boxHeight, boxWidth } from "./box-values";
+import { boxHeight, boxWidth } from "./boxValues";
 
 const nonActiveBox = {
   top: 0,

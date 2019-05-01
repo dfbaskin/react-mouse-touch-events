@@ -1,5 +1,5 @@
 import React from "react";
-import { Boxes } from "./components/boxes";
+import { Boxes } from "./components/Boxes";
 import "./App.css";
 
 export function App() {
