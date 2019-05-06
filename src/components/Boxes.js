@@ -1,6 +1,5 @@
 import React, {
   useRef,
-  useState,
   useEffect,
   useReducer,
   useCallback,
@@ -13,8 +12,6 @@ import {
   createBoxesAction,
   initialState,
   reducer,
-  boxHeight,
-  boxWidth,
   setBoxEditModeAction,
   selectBoxAtPointAction,
   moveBoxAction,
@@ -56,7 +53,7 @@ export function Boxes() {
       dragItem,
       dragComplete
     }),
-    []
+    [editItem, findItem, dragItem, dragComplete]
   );
 
   const {

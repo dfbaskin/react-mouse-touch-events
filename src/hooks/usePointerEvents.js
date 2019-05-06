@@ -1,10 +1,4 @@
-import {
-  useRef,
-  useEffect,
-  useCallback,
-  createContext,
-  useContext
-} from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { Subject } from "rxjs";
 import { map, filter, tap, switchMap, takeUntil } from "rxjs/operators";
 
@@ -99,10 +93,8 @@ export function usePointerEvents(containerRef, callbackApi) {
       })
     );
 
-    console.log("subscribed");
     const subscription = orchestrationStream.subscribe();
     return () => {
-      console.log("unsubscribed");
       subscription.unsubscribe();
     };
   }, [callbackApi]);
