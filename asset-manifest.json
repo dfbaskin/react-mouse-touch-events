@@ -1,6 +1,15 @@
 {
-  "main.css": "static/css/main.d6e4a815.css",
-  "main.css.map": "static/css/main.d6e4a815.css.map",
-  "main.js": "static/js/main.71efcc01.js",
-  "main.js.map": "static/js/main.71efcc01.js.map"
+  "files": {
+    "main.css": "/react-mouse-touch-events/static/css/main.80fd2c26.chunk.css",
+    "main.js": "/react-mouse-touch-events/static/js/main.58b0f48f.chunk.js",
+    "main.js.map": "/react-mouse-touch-events/static/js/main.58b0f48f.chunk.js.map",
+    "runtime~main.js": "/react-mouse-touch-events/static/js/runtime~main.60c63904.js",
+    "runtime~main.js.map": "/react-mouse-touch-events/static/js/runtime~main.60c63904.js.map",
+    "static/js/2.4a5eba98.chunk.js": "/react-mouse-touch-events/static/js/2.4a5eba98.chunk.js",
+    "static/js/2.4a5eba98.chunk.js.map": "/react-mouse-touch-events/static/js/2.4a5eba98.chunk.js.map",
+    "index.html": "/react-mouse-touch-events/index.html",
+    "precache-manifest.021d74f859fdb4fe0ff5c82d4b2d85e6.js": "/react-mouse-touch-events/precache-manifest.021d74f859fdb4fe0ff5c82d4b2d85e6.js",
+    "service-worker.js": "/react-mouse-touch-events/service-worker.js",
+    "static/css/main.80fd2c26.chunk.css.map": "/react-mouse-touch-events/static/css/main.80fd2c26.chunk.css.map"
+  }
 }
