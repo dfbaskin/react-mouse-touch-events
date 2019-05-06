@@ -1,269 +1,96 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useReducer,
+  useCallback,
+  useMemo
+} from "react";
 import { Box } from "./Box";
-import { boxHeight, boxWidth } from "./boxValues";
 import { BoxEditor } from "./BoxEditor";
-
-import { Subject } from "rxjs";
-import { map, filter, tap, switchMap, takeUntil } from "rxjs/operators";
+import { usePointerEvents } from "../hooks/usePointerEvents";
+import {
+  createBoxesAction,
+  initialState,
+  reducer,
+  boxHeight,
+  boxWidth,
+  setBoxEditModeAction,
+  selectBoxAtPointAction,
+  moveBoxAction,
+  updateSelectedBoxAction
+} from "../hooks/boxesState";
 
 import "./Boxes.css";
 
-const boxCount = 10;
-const DOUBLE_TAP_DELAY = 300;
-
 export function Boxes() {
-  const [boxes, setBoxes] = useState([]);
-  const [selectedBoxIndex, setSelectedBoxIndex] = useState(0);
-  const [editMode, setEditMode] = useState(false);
-  const divRef = useRef(null);
+  const [{ boxes, selectedIndex, editMode }, dispatch] = useReducer(
+    reducer,
+    initialState
+  );
+
+  const containerRef = useRef(null);
+
   useEffect(() => {
-    const { width, height } = divRef.current.getBoundingClientRect();
-    const initialBoxes = new Array(boxCount).fill(0).map((v, idx) => ({
-      id: `box-${idx + 1}`,
-      top: Math.random() * (height - boxHeight),
-      left: Math.random() * (width - boxWidth),
-      width: boxWidth,
-      height: boxHeight,
-      text: `Box ${idx + 101}`
-    }));
-    setBoxes(initialBoxes);
+    const count = 10;
+    const { width, height } = containerRef.current.getBoundingClientRect();
+    dispatch(createBoxesAction({ width, height, count }));
   }, []);
 
-  const onBoxModified = updatedBox => {
-    setBoxes(
-      boxes.map((box, idx) => {
-        return idx === selectedBoxIndex ? updatedBox : box;
-      })
-    );
-  };
+  const editItem = useCallback(({ x, y }) => {
+    dispatch(selectBoxAtPointAction({ x, y }));
+    dispatch(setBoxEditModeAction({ editMode: true }));
+  }, []);
+  const findItem = useCallback(({ x, y }) => {
+    dispatch(selectBoxAtPointAction({ x, y }));
+    return true;
+  }, []);
+  const dragItem = useCallback(({ x, y, offsetX, offsetY }) => {
+    dispatch(moveBoxAction({ x, y, offsetX, offsetY }));
+  }, []);
+  const dragComplete = useCallback(() => {}, []);
+  const callbackApi = useMemo(
+    () => ({
+      editItem,
+      findItem,
+      dragItem,
+      dragComplete
+    }),
+    []
+  );
 
-  const cancelEditMode = () => {
-    setEditMode(false);
-  };
+  const {
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel
+  } = usePointerEvents(containerRef, callbackApi);
 
   const divProps = {
     className: "boxes",
-    ref: divRef
+    ref: containerRef,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel
   };
+
   const boxEditorProps = {
-    box: editMode ? boxes[selectedBoxIndex] : undefined,
-    onBoxModified,
-    cancelEditMode
+    box: editMode ? boxes[selectedIndex] : undefined,
+    onBoxModified: box => {
+      dispatch(updateSelectedBoxAction({ box }));
+    },
+    cancelEditMode: () => {
+      dispatch(setBoxEditModeAction({ editMode: false }));
+    }
   };
 
   return (
     <div {...divProps}>
       <BoxEditor {...boxEditorProps} />
       {boxes.map((box, idx) => (
-        <Box key={box.id} box={box} isActive={idx === selectedBoxIndex} />
+        <Box key={box.id} box={box} isActive={idx === selectedIndex} />
       ))}
     </div>
   );
 }
-
-/*
-export class Boxes extends PureComponent {
-  divRef = null;
-  subscriptions = [];
-  state = {
-    boxes: [],
-    selectedBoxIndex: -1,
-    editMode: false
-  };
-  pointerDownObservable = new Subject();
-  pointerMoveObservable = new Subject();
-  pointerUpObservable = new Subject();
-
-  componentDidMount() {
-    const { width, height } = this.divRef.getBoundingClientRect();
-    this.setState(() => ({
-      boxes: new Array(boxCount).fill().map((v, idx) => ({
-        id: `box-${idx + 1}`,
-        top: Math.random() * (height - boxHeight),
-        left: Math.random() * (width - boxWidth),
-        width: boxWidth,
-        height: boxHeight,
-        text: `Box ${idx + 101}`
-      })),
-      selectedBoxIndex: 0
-    }));
-    this.subscriptions = [this.observePointerEvents()];
-  }
-
-  componentWillUnmount() {
-    this.subscriptions.forEach(unsubscribe => unsubscribe());
-  }
-
-  observePointerEvents() {
-    const pointerStream = this.pointerDownObservable.pipe(
-      map(({ x, y, offsetX, offsetY }) => ({
-        x,
-        y,
-        offsetX,
-        offsetY,
-        found: this.findBox(x, y)
-      })),
-      filter(({ found }) => found !== -1 && !this.state.editMode),
-      tap(({ found }) => {
-        this.setState(() => ({
-          selectedBoxIndex: found
-        }));
-      }),
-      switchMap(({ offsetX, offsetY }) => {
-        return this.pointerMoveObservable.pipe(
-          tap(({ x, y }) => {
-            this.setState(({ boxes, selectedBoxIndex }) => ({
-              boxes: boxes.map((box, idx) => {
-                return idx !== selectedBoxIndex
-                  ? box
-                  : {
-                      ...box,
-                      left: x - offsetX,
-                      top: y - offsetY
-                    };
-              })
-            }));
-          }),
-          takeUntil(this.pointerUpObservable)
-        );
-      })
-    );
-
-    return pointerStream.subscribe();
-  }
-
-  onPointerDown = (() => {
-    let lastTime = Date.now();
-    return evt => {
-      const evtData = this.getPointerEventData(evt);
-
-      const thisTime = Date.now();
-      const elapsedTime = thisTime - lastTime;
-      lastTime = thisTime;
-
-      if (elapsedTime > DOUBLE_TAP_DELAY) {
-        this.divRef.setPointerCapture(evt.pointerId);
-        this.pointerDownObservable.next(evtData);
-      } else {
-        const { x, y } = evtData;
-        const found = this.findBox(x, y);
-        if (found !== -1) {
-          this.setState(() => ({
-            selectedBoxIndex: found,
-            editMode: true
-          }));
-        }
-      }
-    };
-  })();
-
-  onPointerMove = evt => {
-    this.pointerMoveObservable.next(this.getPointerEventData(evt));
-  };
-
-  onPointerUp = evt => {
-    this.pointerUpObservable.next(this.getPointerEventData(evt));
-  };
-
-  onPointerCancel = evt => {
-    this.divRef.releasePointerCapture(evt.pointerId);
-  };
-
-  getPointerEventData(evt) {
-    const { clientX, clientY, altKey, ctrlKey, shiftKey, target } = evt;
-    const { left, top } = this.divRef.getBoundingClientRect();
-    const { left: targetLeft, top: targetTop } = target.getBoundingClientRect();
-    const x = clientX - left;
-    const y = clientY - top;
-    const offsetX = clientX - targetLeft;
-    const offsetY = clientY - targetTop;
-    return { x, y, offsetX, offsetY, altKey, ctrlKey, shiftKey };
-  }
-
-  findBox(x, y) {
-    const { boxes, selectedBoxIndex } = this.state;
-    const { found } = boxes.reduce(
-      (acc, box) => {
-        const x1 = box.left;
-        const x2 = box.left + box.width;
-        const y1 = box.top;
-        const y2 = box.top + box.height;
-        if (!acc.final) {
-          if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
-            acc.found = acc.idx;
-            if (acc.idx === selectedBoxIndex) {
-              acc.final = true;
-            }
-          }
-          acc.idx += 1;
-        }
-        return acc;
-      },
-      {
-        found: -1,
-        final: false,
-        idx: 0
-      }
-    );
-    return found;
-  }
-
-  onBoxModified = updatedBox => {
-    this.setState(({ boxes, selectedBoxIndex }) => ({
-      boxes: boxes.map((box, idx) => {
-        return idx === selectedBoxIndex ? updatedBox : box;
-      })
-    }));
-  };
-
-  cancelEditMode = () => {
-    this.setState(() => ({
-      editMode: false
-    }));
-  };
-
-  setDivRef = divRef => {
-    this.divRef = divRef;
-  };
-
-  render() {
-    const {
-      state,
-      setDivRef: ref,
-      onBoxModified,
-      cancelEditMode,
-      onPointerDown,
-      onPointerMove,
-      onPointerUp,
-      onPointerCancel
-    } = this;
-    const { boxes, selectedBoxIndex, editMode } = state;
-    const divProps = {
-      className: "boxes",
-      ref,
-      onPointerDown,
-      onPointerMove,
-      onPointerUp,
-      onPointerCancel
-    };
-    const boxEditorProps = {
-      box: editMode ? boxes[selectedBoxIndex] : undefined,
-      onBoxModified,
-      cancelEditMode
-    };
-    return (
-      <div {...divProps}>
-        <BoxEditor {...boxEditorProps} />
-        {boxes.map((box, idx) => {
-          const boxProps = {
-            key: box.id,
-            box,
-            isActive: idx === selectedBoxIndex
-          };
-          return <Box {...boxProps} />;
-        })}
-      </div>
-    );
-  }
-}
-*/
