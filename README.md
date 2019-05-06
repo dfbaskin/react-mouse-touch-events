@@ -13,7 +13,11 @@ React does not [support pointer events](https://github.com/facebook/react/issues
 directly, so the [react-pointable](https://github.com/MilllerTime/react-pointable)
 component is used.
 
-The `master` branch uses an updated version of React that now has support for
+The `version-three` branch uses an updated version of React that now has support for
 [pointer events](https://reactjs.org/blog/2018/05/23/react-v-16-4.html).
+
+The `master` branch was updated to use
+[hooks](https://reactjs.org/docs/hooks-intro.html) and creates
+a `usePointerEvents` hook along with a callback API.
 
 This project was bootstrapped with [Create React App](https://github.com/facebookincubator/create-react-app).
