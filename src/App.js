@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { Boxes1 } from "./components/Boxes1";
+import { Boxes2 } from "./components/Boxes2";
 import "./App.css";
 
 export function App() {
@@ -10,7 +11,7 @@ export function App() {
     },
     [setHooksType]
   );
-  const boxes = hooksType === 1 ? <Boxes1 /> : <div>Boxes2</div>;
+  const boxes = hooksType === 1 ? <Boxes1 /> : <Boxes2 />;
 
   return (
     <div className="App">

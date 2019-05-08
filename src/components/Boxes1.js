@@ -40,7 +40,6 @@ export function Boxes1() {
   }, []);
   const findItem = useCallback(({ x, y }) => {
     dispatch(selectBoxAtPointAction({ x, y }));
-    return true;
   }, []);
   const dragItem = useCallback(({ x, y, offsetX, offsetY }) => {
     dispatch(moveBoxAction({ x, y, offsetX, offsetY }));

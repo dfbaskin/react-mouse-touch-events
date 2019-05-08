@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from "react";
 import { Subject } from "rxjs";
-import { map, filter, tap, switchMap, takeUntil } from "rxjs/operators";
+import { tap, switchMap, takeUntil } from "rxjs/operators";
 
 const DOUBLE_TAP_DELAY = 300;
 
@@ -72,11 +72,9 @@ export function usePointerEvents(containerRef, callbackApi) {
     const pointerUpStream = subjects.current.pointerUpSubject.asObservable();
 
     const orchestrationStream = pointerDownStream.pipe(
-      map(evtData => ({
-        ...evtData,
-        found: callbackApi.findItem(evtData)
-      })),
-      filter(({ found }) => found),
+      tap(evtData => {
+        callbackApi.findItem(evtData);
+      }),
       switchMap(({ offsetX, offsetY }) => {
         return pointerMoveStream.pipe(
           tap(({ x, y }) => {
