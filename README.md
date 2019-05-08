@@ -20,4 +20,12 @@ The `master` branch was updated to use
 [hooks](https://reactjs.org/docs/hooks-intro.html) and creates
 a `usePointerEvents` hook along with a callback API.
 
+_Update May 7, 2019_
+
+Added an additional example with the `useMethods` hook (which also uses Immer) that I
+think cleans things up a bit.
+
+- [https://github.com/pelotom/use-methods](https://github.com/pelotom/use-methods)
+- [https://github.com/immerjs/immer](https://github.com/immerjs/immer)
+
 This project was bootstrapped with [Create React App](https://github.com/facebookincubator/create-react-app).

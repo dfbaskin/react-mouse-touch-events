@@ -33,12 +33,8 @@ export function Boxes2() {
         selectBoxAtPoint({ x, y });
         setBoxEditMode(true);
       },
-      findItem({ x, y }) {
-        selectBoxAtPoint({ x, y });
-      },
-      dragItem({ x, y, offsetX, offsetY }) {
-        moveBox({ x, y, offsetX, offsetY });
-      },
+      findItem: selectBoxAtPoint,
+      dragItem: moveBox,
       dragComplete() {}
     }),
     {}
