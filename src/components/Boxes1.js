@@ -20,7 +20,7 @@ import {
 
 import "./Boxes.css";
 
-export function Boxes() {
+export function Boxes1() {
   const [{ boxes, selectedIndex, editMode }, dispatch] = useReducer(
     reducer,
     initialState

@@ -6,7 +6,8 @@
   "dependencies": {
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
-    "rxjs": "^6.5.1"
+    "rxjs": "^6.5.1",
+    "use-methods": "^0.4.7"
   },
   "devDependencies": {
     "gh-pages": "^2.0.1",
